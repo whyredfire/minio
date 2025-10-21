@@ -2,13 +2,22 @@
 
 Automated builds of [MinIO](https://github.com/minio/minio) Docker images from official releases.
 
-Since MinIO stopped providing pre-built Docker images for new releases, this repository automatically builds and publishes them to GitHub Container Registry.
+Since MinIO stopped providing pre-built Docker images for new releases, this repository automatically builds and publishes them to both GitHub Container Registry and Docker Hub.
 
 ## Available Images
 
 Images are available at:
+
+**GitHub Container Registry (GHCR):**
 ```
 ghcr.io/coollabsio/minio:<tag>
+```
+
+**Docker Hub:**
+```
+docker.io/coollabsio/minio:<tag>
+# or simply
+coollabsio/minio:<tag>
 ```
 
 ### Tags
@@ -22,6 +31,15 @@ ghcr.io/coollabsio/minio:<tag>
 ### Basic Usage
 
 ```bash
+# Using Docker Hub (simpler, no authentication needed)
+docker run -p 9000:9000 -p 9001:9001 \
+  -e MINIO_ROOT_USER=minioadmin \
+  -e MINIO_ROOT_PASSWORD=minioadmin \
+  -v /path/to/data:/data \
+  coollabsio/minio:latest \
+  server /data --console-address ":9001"
+
+# Or using GitHub Container Registry
 docker run -p 9000:9000 -p 9001:9001 \
   -e MINIO_ROOT_USER=minioadmin \
   -e MINIO_ROOT_PASSWORD=minioadmin \
@@ -37,7 +55,7 @@ version: '3.8'
 
 services:
   minio:
-    image: ghcr.io/coollabsio/minio:latest
+    image: coollabsio/minio:latest
     container_name: minio
     ports:
       - "9000:9000"
@@ -57,14 +75,6 @@ services:
 volumes:
   minio-data:
 ```
-
-## How It Works
-
-1. **Scheduled Checks**: A GitHub Action runs daily to check for new MinIO releases
-2. **Version Detection**: Fetches the latest release from the official MinIO repository
-3. **Build Process**: Builds multi-architecture images (amd64, arm64) from source
-4. **Publishing**: Pushes images to GitHub Container Registry with appropriate tags
-5. **Skip Existing**: Avoids rebuilding if the version already exists
 
 ## Building Locally
 
