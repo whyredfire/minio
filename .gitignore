@@ -1,0 +1,21 @@
+# Build artifacts
+*.log
+*.tmp
+*.swp
+*~
+
+# Docker
+.dockerignore
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test data
+/data/
+/test-data/

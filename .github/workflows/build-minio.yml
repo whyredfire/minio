@@ -1,0 +1,112 @@
+name: Build MinIO Docker Images
+
+on:
+  schedule:
+    # Run daily at 00:00 UTC to check for new releases
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'MinIO version to build (e.g., RELEASE.2024-10-13T13-34-11Z). Leave empty to build latest.'
+        required: false
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  check-and-build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get latest MinIO release
+        id: minio-release
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+            echo "Using manually specified version: $VERSION"
+          else
+            # Fetch the latest release from MinIO GitHub
+            LATEST_RELEASE=$(curl -s https://api.github.com/repos/minio/minio/releases/latest | jq -r '.tag_name')
+            VERSION="$LATEST_RELEASE"
+            echo "Latest MinIO release: $VERSION"
+          fi
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+          # Extract a clean version for Docker tags (remove RELEASE. prefix if present)
+          CLEAN_VERSION=$(echo "$VERSION" | sed 's/^RELEASE\.//')
+          echo "clean_version=$CLEAN_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check if image already exists
+        id: check-image
+        run: |
+          VERSION="${{ steps.minio-release.outputs.version }}"
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+
+          # Try to pull the image to see if it exists
+          if docker manifest inspect "${IMAGE}:${VERSION}" > /dev/null 2>&1; then
+            echo "Image ${IMAGE}:${VERSION} already exists"
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Image ${IMAGE}:${VERSION} does not exist, will build"
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Extract metadata
+        id: meta
+        if: steps.check-image.outputs.exists == 'false'
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ steps.minio-release.outputs.version }}
+            type=raw,value=${{ steps.minio-release.outputs.clean_version }}
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        if: steps.check-image.outputs.exists == 'false'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            MINIO_VERSION=${{ steps.minio-release.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Summary
+        run: |
+          if [ "${{ steps.check-image.outputs.exists }}" == "true" ]; then
+            echo "✅ Image for MinIO ${{ steps.minio-release.outputs.version }} already exists, skipped build" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ Successfully built and pushed MinIO ${{ steps.minio-release.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Images pushed:" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
