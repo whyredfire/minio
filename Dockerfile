@@ -24,10 +24,15 @@ RUN git clone https://github.com/minio/minio.git . && \
         echo "Building from latest master"; \
     fi
 
-# Build MinIO binary
-RUN CGO_ENABLED=0 go build -trimpath \
-    -ldflags "-s -w" \
-    -o /usr/bin/minio
+# Get commit info for ldflags
+RUN COMMIT_ID=$(git rev-parse --short HEAD) && \
+    echo "Building MinIO version: $MINIO_VERSION commit: $COMMIT_ID"
+
+# Build MinIO binary with proper version flags
+RUN COMMIT_ID=$(git rev-parse --short HEAD) && \
+    CGO_ENABLED=0 go build -trimpath \
+    -ldflags "-s -w -X github.com/minio/minio/cmd.ReleaseTag=${MINIO_VERSION}" \
+    -o /usr/bin/minio .
 
 # Verify the binary works
 RUN /usr/bin/minio --version
