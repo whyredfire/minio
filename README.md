@@ -81,9 +81,9 @@ docker build --build-arg MINIO_VERSION=RELEASE.2024-10-13T13-34-11Z -t minio:tes
 ## Architecture
 
 - **Multi-platform**: Built for both `linux/amd64` and `linux/arm64`
-- **Source-based**: Compiled from official MinIO source code
+- **Source-based**: Compiled from official MinIO source code at each release
 - **Minimal base**: Uses Red Hat UBI9 micro image for security and size
-- **Official entrypoint**: Uses MinIO's official docker-entrypoint.sh script
+- **Official scripts**: Uses MinIO's official docker-entrypoint.sh and other scripts from the cloned repository
 
 ## Ports
 

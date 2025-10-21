@@ -45,12 +45,10 @@ LABEL org.opencontainers.image.authors="MinIO, Inc."
 LABEL org.opencontainers.image.vendor="MinIO, Inc."
 LABEL org.opencontainers.image.licenses="AGPL-3.0"
 
-# Copy MinIO binary from builder
+# Copy MinIO binary and official docker scripts from builder
 COPY --from=builder /usr/bin/minio /usr/bin/minio
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-
-# Copy entrypoint script
-COPY dockerscripts/docker-entrypoint.sh /usr/bin/docker-entrypoint.sh
+COPY --from=builder /workspace/dockerscripts/docker-entrypoint.sh /usr/bin/docker-entrypoint.sh
 
 # Set executable permissions
 RUN chmod +x /usr/bin/minio /usr/bin/docker-entrypoint.sh
