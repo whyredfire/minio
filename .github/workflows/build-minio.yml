@@ -10,6 +10,11 @@ on:
         description: 'MinIO version to build (e.g., RELEASE.2024-10-13T13-34-11Z). Leave empty to build latest.'
         required: false
         type: string
+      force_rebuild:
+        description: 'Force rebuild even if image already exists'
+        required: false
+        type: boolean
+        default: false
 
 env:
   REGISTRY: ghcr.io
@@ -63,9 +68,14 @@ jobs:
         run: |
           VERSION="${{ steps.minio-release.outputs.version }}"
           IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          FORCE_REBUILD="${{ github.event.inputs.force_rebuild }}"
 
+          # If force_rebuild is true, always rebuild
+          if [ "$FORCE_REBUILD" = "true" ]; then
+            echo "Force rebuild enabled, skipping existence check"
+            echo "exists=false" >> $GITHUB_OUTPUT
           # Try to pull the image to see if it exists
-          if docker manifest inspect "${IMAGE}:${VERSION}" > /dev/null 2>&1; then
+          elif docker manifest inspect "${IMAGE}:${VERSION}" > /dev/null 2>&1; then
             echo "Image ${IMAGE}:${VERSION} already exists"
             echo "exists=true" >> $GITHUB_OUTPUT
           else
