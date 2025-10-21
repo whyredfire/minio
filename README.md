@@ -8,7 +8,7 @@ Since MinIO stopped providing pre-built Docker images for new releases, this rep
 
 Images are available at:
 ```
-ghcr.io/<your-username>/minio-oss:<tag>
+ghcr.io/coollabsio/minio:<tag>
 ```
 
 ### Tags
@@ -26,7 +26,7 @@ docker run -p 9000:9000 -p 9001:9001 \
   -e MINIO_ROOT_USER=minioadmin \
   -e MINIO_ROOT_PASSWORD=minioadmin \
   -v /path/to/data:/data \
-  ghcr.io/<your-username>/minio-oss:latest \
+  ghcr.io/coollabsio/minio:latest \
   server /data --console-address ":9001"
 ```
 
@@ -37,7 +37,7 @@ version: '3.8'
 
 services:
   minio:
-    image: ghcr.io/<your-username>/minio-oss:latest
+    image: ghcr.io/coollabsio/minio:latest
     container_name: minio
     ports:
       - "9000:9000"
