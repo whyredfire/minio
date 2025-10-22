@@ -4,6 +4,8 @@ Automated builds of [MinIO](https://github.com/minio/minio) Docker images from o
 
 Since MinIO stopped providing pre-built Docker images for new releases, this repository automatically builds and publishes them to both GitHub Container Registry and Docker Hub.
 
+> If you need a specific version / release, open an issue. I (Andras) will make it available.
+
 ## Available Images
 
 Images are available at:
