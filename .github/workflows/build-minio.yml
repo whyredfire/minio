@@ -15,6 +15,11 @@ on:
         required: false
         type: boolean
         default: false
+      skip_latest_tag:
+        description: 'Skip tagging as latest (useful for building older versions)'
+        required: false
+        type: boolean
+        default: false
 
 env:
   GITHUB_REGISTRY: ghcr.io
@@ -178,19 +183,31 @@ jobs:
 
       - name: Create & publish manifest on ${{ env.GITHUB_REGISTRY }}
         run: |
+          TAGS="-t ${{ env.GITHUB_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.check-release.outputs.version }}"
+          TAGS="$TAGS -t ${{ env.GITHUB_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.check-release.outputs.clean_version }}"
+
+          # Only add latest tag if skip_latest_tag is false
+          if [ "${{ github.event.inputs.skip_latest_tag }}" != "true" ]; then
+            TAGS="$TAGS -t ${{ env.GITHUB_REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          fi
+
           docker buildx imagetools create \
-          -t ${{ env.GITHUB_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.check-release.outputs.version }} \
-          -t ${{ env.GITHUB_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.check-release.outputs.clean_version }} \
-          -t ${{ env.GITHUB_REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+          $TAGS \
           ${{ env.GITHUB_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.check-release.outputs.version }}-amd64 \
           ${{ env.GITHUB_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.check-release.outputs.version }}-arm64
 
       - name: Create & publish manifest on ${{ env.DOCKER_REGISTRY }}
         run: |
+          TAGS="-t ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.check-release.outputs.version }}"
+          TAGS="$TAGS -t ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.check-release.outputs.clean_version }}"
+
+          # Only add latest tag if skip_latest_tag is false
+          if [ "${{ github.event.inputs.skip_latest_tag }}" != "true" ]; then
+            TAGS="$TAGS -t ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          fi
+
           docker buildx imagetools create \
-          -t ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.check-release.outputs.version }} \
-          -t ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.check-release.outputs.clean_version }} \
-          -t ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+          $TAGS \
           ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.check-release.outputs.version }}-amd64 \
           ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.check-release.outputs.version }}-arm64
 
