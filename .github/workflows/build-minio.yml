@@ -24,7 +24,7 @@ on:
 env:
   GITHUB_REGISTRY: ghcr.io
   DOCKER_REGISTRY: docker.io
-  IMAGE_NAME: coollabsio/minio
+  IMAGE_NAME: whyredfire/minio
 
 jobs:
   check-release:
